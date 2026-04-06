@@ -1,0 +1,30 @@
+#pragma once
+#include <string>
+#include <cmath>
+
+struct Position {
+    int x;
+    int y;
+};
+
+class Unit {
+public:
+    std::string name;
+    int hp;
+    int maxHp;
+    int attackDamage;
+    int moveRange;
+    int attackRange;
+    bool isPlayer;
+    bool alive;
+    Position pos;
+    char symbol;
+
+    Unit(std::string unitName, int health, int damage, int move, int range,
+         bool playerControlled, Position startPos, char displaySymbol);
+
+    virtual ~Unit() = default;
+
+    bool isInRange(const Unit& other) const;
+    bool canMoveTo(Position newPos) const;
+};
