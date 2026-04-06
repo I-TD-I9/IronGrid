@@ -1,28 +1,73 @@
 # IronGrid
 
-A turn-based tactical skirmish console game
+A turn-based tactical skirmish game built in C++ for the console.
 
 ## Overview
 
-Command a small squad of units on a 6x6 grid battlefield. Take turns moving and attacking to defeat the enemy team
+Command a squad of 2 units on a 6x6 grid battlefield. Choose your team from 4 unit types, then take turns moving and attacking to eliminate the enemy squad. Enemies are randomly assigned and controlled by AI.
 
-**Player units:** Knight (`S`) and Archer (`A`)
-**Enemy units:** Knight (`s`) and Archer (`a`)
+Each turn you can **move**, **attack**, or **end your turn**. The game ends when one side is eliminated. After each match you can play again with a new team.
 
-```
-   0 1 2 3 4 5
-0: S . . . . .
-1: A . . . . .
-2: . . . . . .
-3: . . . . . .
-4: . . . . . a
-5: . . . . . s
-```
+## Unit Types
 
-Each turn you can **move**, **attack**, or **end your turn**. Enemies act automatically with simple AI. The game ends when one side is eliminated
+| Unit | HP | ATK | MOV | RNG | Symbol |
+|------|----|-----|-----|-----|--------|
+| Knight | 12 | 4 | 2 | 2 | K / k |
+| Archer | 8 | 2 | 1 | 5 | A / a |
+| Lancer | 10 | 3 | 2 | 4 | L / l |
+| Assassin | 9 | 5 | 3 | 1 | S / s |
+
+Uppercase = player, lowercase = enemy.
 
 ## Build & Run
 
+Requires CMake 3.16+ and a C++17 compiler.
+
 ```bash
-g++ src/main.cpp -o irongrid && ./irongrid
+mkdir build && cd build
+cmake .. -G "MinGW Makefiles"
+cmake --build .
+./irongrid
 ```
+
+## Project Structure
+
+```
+IronGrid/
+├── CMakeLists.txt
+├── headers/
+│   ├── ai/
+│   │   └── enemy_ai.h        # Enemy AI targeting & movement
+│   ├── combat/
+│   │   └── combat.h           # Attack resolution & target selection
+│   ├── game/
+│   │   └── game.h             # Game loop, turns, player input
+│   ├── grid/
+│   │   └── grid.h             # Grid display, position checks, HP bars
+│   └── units/
+│       ├── unit.h             # Base Unit class & Position struct
+│       ├── knight.h           # Knight (tank, short range)
+│       ├── archer.h           # Archer (fragile, long range)
+│       ├── lancer.h           # Lancer (balanced, mid range)
+│       └── assassin.h         # Assassin (high damage, melee)
+└── src/
+    ├── main.cpp               # Entry point
+    ├── ai/
+    │   └── enemy_ai.cpp
+    ├── combat/
+    │   └── combat.cpp
+    ├── game/
+    │   └── game.cpp
+    ├── grid/
+    │   └── grid.cpp
+    └── units/
+        └── unit.cpp
+```
+
+## Architecture
+
+- **Unit** — Base class with HP, attack, movement, and range stats. Knight, Archer, Lancer, and Assassin inherit from it with preset stats.
+- **Grid** — Handles rendering the battlefield with ANSI colors, range indicators (`~` move, `x` attack, `#` both), and HP bars.
+- **Combat** — Static methods for resolving attacks and presenting target choices to the player.
+- **EnemyAI** — Finds the closest player unit, moves toward it using full move range with axis-fallback pathfinding, and attacks if in range.
+- **Game** — Orchestrates the game loop: unit selection, turn order, player/AI dispatch, win detection, and replay.
