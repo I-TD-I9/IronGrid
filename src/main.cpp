@@ -6,8 +6,17 @@
 
 using namespace std;
 
+// ANSI color codes for console output.
+const string RESET   = "\033[0m";
+const string BOLD    = "\033[1m";
+const string DIM     = "\033[2m";
+const string GREEN   = "\033[32m";
+const string RED     = "\033[31m";
+const string YELLOW  = "\033[33m";
+const string CYAN    = "\033[36m";
+const string PURPLE  = "\033[35m";
+
 // A simple struct to store a position on the grid.
-// "struct" is like a lightweight class that usually just holds data.
 struct Position {
     int x;
     int y;
@@ -18,6 +27,7 @@ class Unit {
 public:
     string name;
     int hp;
+    int maxHp;
     int attackDamage;
     int moveRange;
     int attackRange;
@@ -31,6 +41,7 @@ public:
          bool playerControlled, Position startPos, char displaySymbol)
         : name(unitName),
           hp(health),
+          maxHp(health),
           attackDamage(damage),
           moveRange(move),
           attackRange(range),
@@ -55,8 +66,8 @@ public:
 // The Game class controls the grid, turns, combat, and game loop.
 class Game {
 private:
-    static const int WIDTH = 6;
-    static const int HEIGHT = 6;
+    static const int WIDTH = 7;
+    static const int HEIGHT = 7;
 
     vector<Unit> units;
     int currentTurnIndex;
@@ -68,16 +79,16 @@ public:
 
     // Create the starting units for both teams.
     void setupUnits() {
-        units.push_back(Unit("Player Knight", 12, 4, 2, 1, true,  {0, 0}, 'K'));
-        units.push_back(Unit("Player Archer", 8, 3, 2, 2, true,  {0, 1}, 'A'));
+        units.push_back(Unit("Player Knight", 12, 4, 2, 1, true,  {1, 1}, 'K'));
+        units.push_back(Unit("Player Archer", 8, 3, 2, 2, true,  {1, 2}, 'A'));
 
-        units.push_back(Unit("Enemy Knight", 12, 4, 2, 1, false, {5, 5}, 'k'));
-        units.push_back(Unit("Enemy Archer", 8, 3, 2, 2, false, {5, 4}, 'a'));
+        units.push_back(Unit("Enemy Knight", 12, 4, 2, 1, false, {6, 6}, 'k'));
+        units.push_back(Unit("Enemy Archer", 8, 3, 2, 2, false, {6, 5}, 'a'));
     }
 
     // Main game loop.
     void run() {
-        cout << "Welcome to Irongrid Skirmish!\n";
+        cout << "Welcome to IronGrid!\n";
 
         while (true) {
             if (isGameOver()) {
@@ -103,41 +114,111 @@ public:
                 enemyTurn(currentUnit);
             }
 
-            removeDeadUnits();
             nextTurn();
         }
     }
 
-    // Print the battlefield.
+    // Generate an HP bar.
+    string hpBar(int hp, int maxHp, int barWidth = 12) {
+        int filled = (maxHp > 0) ? (hp * barWidth / maxHp) : 0;
+        string bar = "[";
+        for (int i = 0; i < barWidth; i++) {
+            bar += (i < filled) ? "#" : " ";
+        }
+        bar += "]";
+        return bar;
+    }
+
+    // Print the battlefield with box-drawing, colors, range highlights, and HP bars.
     void displayGrid() {
-        cout << "\n   ";
-        for (int x = 0; x < WIDTH; x++) {
-            cout << x << " ";
+        Unit& current = units[currentTurnIndex];
+        bool showRanges = current.alive && current.isPlayer;
+
+        // Column headers.
+        cout << "\n     ";
+        for (int x = 1; x < WIDTH; x++) {
+            cout << x << "   ";
         }
         cout << "\n";
 
-        for (int y = 0; y < HEIGHT; y++) {
-            cout << y << ": ";
-            for (int x = 0; x < WIDTH; x++) {
+        // Top border.
+        cout << "  +";
+        for (int x = 1; x < WIDTH; x++) {
+            cout << "---";
+            cout << (x < WIDTH - 1 ? "+" : "+");
+        }
+        cout << "\n";
+
+        for (int y = 1; y < HEIGHT; y++) {
+            cout << y << " ";
+            for (int x = 1; x < WIDTH; x++) {
+                cout << "| ";
                 Position p = {x, y};
                 int unitIndex = getUnitAtPosition(p);
 
                 if (unitIndex != -1 && units[unitIndex].alive) {
-                    cout << units[unitIndex].symbol << " ";
+                    bool isActive = (unitIndex == currentTurnIndex);
+                    if (isActive) {
+                        cout << YELLOW << BOLD << units[unitIndex].symbol << RESET;
+                    } else if (units[unitIndex].isPlayer) {
+                        cout << GREEN << units[unitIndex].symbol << RESET;
+                    } else {
+                        cout << RED << units[unitIndex].symbol << RESET;
+                    }
+                } else if (showRanges) {
+                    int dist = abs(current.pos.x - p.x) + abs(current.pos.y - p.y);
+                    bool inAttack = dist > 0 && dist <= current.attackRange;
+                    bool inMove = dist > 0 && dist <= current.moveRange && getUnitAtPosition(p) == -1;
+                    if (inAttack && inMove) {
+                        cout << BOLD << PURPLE << "#" << RESET;
+                    } else if (inAttack) {
+                        cout << DIM << RED << "x" << RESET;
+                    } else if (inMove) {
+                        cout << DIM << CYAN << "~" << RESET;
+                    } else {
+                        cout << " ";
+                    }
                 } else {
-                    cout << ". ";
+                    cout << " ";
                 }
+                cout << " ";
             }
-            cout << "\n";
+            cout << "|\n";
+
+            // Row separator or bottom border.
+            if (y < HEIGHT - 1) {
+                cout << "  +";
+                for (int x = 1; x < WIDTH; x++) {
+                    cout << "---";
+                    cout << (x < WIDTH - 1 ? "+" : "+");
+                }
+                cout << "\n";
+            }
         }
 
-        cout << "\nUnits:\n";
+        // Bottom border.
+        cout << "  +";
+        for (int x = 1; x < WIDTH; x++) {
+            cout << "---";
+            cout << (x < WIDTH - 1 ? "+" : "+");
+        }
+        cout << "\n";
+
+        // Unit legend with HP bars.
+        cout << "\n";
         for (int i = 0; i < (int)units.size(); i++) {
-            if (units[i].alive) {
-                cout << i << " - " << units[i].name
-                     << " | HP: " << units[i].hp
-                     << " | Pos: (" << units[i].pos.x << ", " << units[i].pos.y << ")\n";
+            if (!units[i].alive) continue;
+            bool isActive = (i == currentTurnIndex);
+            string color = units[i].isPlayer ? GREEN : RED;
+
+            if (isActive) {
+                cout << YELLOW << BOLD << "> " << units[i].symbol << "  " << units[i].name << RESET;
+            } else {
+                cout << "  " << color << units[i].symbol << RESET << "  " << units[i].name;
             }
+
+            cout << "  " << hpBar(units[i].hp, units[i].maxHp)
+                 << " " << units[i].hp << "/" << units[i].maxHp << "\n";
         }
     }
 
@@ -174,7 +255,7 @@ public:
         }
     }
 
-    // Very simple enemy AI.
+    // Enemy AI.
     void enemyTurn(Unit& unit) {
         cout << unit.name << " is taking its turn...\n";
 
@@ -333,13 +414,6 @@ public:
     // Move to the next unit's turn.
     void nextTurn() {
         currentTurnIndex = (currentTurnIndex + 1) % units.size();
-    }
-
-    // This function is here mostly for clarity and future expansion.
-    void removeDeadUnits() {
-        // We are not actually erasing dead units from the vector.
-        // Instead, we keep them and mark alive = false.
-        // That makes the turn logic simpler for now.
     }
 
     // Returns true if either side has lost all living units.
