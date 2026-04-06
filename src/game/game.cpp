@@ -116,31 +116,53 @@ void Game::run() {
     std::cout << "Welcome to IronGrid!\n";
 
     while (true) {
-        if (isGameOver()) {
+        while (true) {
+            if (isGameOver()) {
+                displayGrid();
+                announceWinner();
+                break;
+            }
+
+            Unit& currentUnit = *units[currentTurnIndex];
+
+            // Skip dead units.
+            if (!currentUnit.alive) {
+                nextTurn();
+                continue;
+            }
+
             displayGrid();
-            announceWinner();
-            break;
-        }
+            std::cout << "\nCurrent turn: " << currentUnit.name << "\n";
 
-        Unit& currentUnit = *units[currentTurnIndex];
+            if (currentUnit.isPlayer) {
+                playerTurn(currentUnit);
+            } else {
+                EnemyAI::takeTurn(currentUnit, units, grid);
+            }
 
-        // Skip dead units.
-        if (!currentUnit.alive) {
             nextTurn();
-            continue;
         }
 
-        displayGrid();
-        std::cout << "\nCurrent turn: " << currentUnit.name << "\n";
-
-        if (currentUnit.isPlayer) {
-            playerTurn(currentUnit);
-        } else {
-            EnemyAI::takeTurn(currentUnit, units, grid);
-        }
-
-        nextTurn();
+        if (!askPlayAgain()) break;
+        reset();
     }
+}
+
+bool Game::askPlayAgain() {
+    std::cout << "\nPlay again? (y/n): ";
+    char answer;
+    std::cin >> answer;
+    if (std::cin.fail()) {
+        clearInput();
+        return false;
+    }
+    return answer == 'y' || answer == 'Y';
+}
+
+void Game::reset() {
+    units.clear();
+    currentTurnIndex = 0;
+    setupUnits();
 }
 
 void Game::displayGrid() {

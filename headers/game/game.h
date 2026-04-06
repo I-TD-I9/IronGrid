@@ -18,6 +18,8 @@ private:
     void nextTurn();
     bool isGameOver();
     void announceWinner();
+    bool askPlayAgain();
+    void reset();
     void clearInput();
 
 public:
