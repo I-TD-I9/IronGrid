@@ -19,7 +19,11 @@ void Game::setupUnits() {
     std::cout << "Select two units for your team:\n";
     int choice;
     
-    std::cout << "1. Knight\n2. Archer\n3. Lancer\n4. Assassin\n";
+    std::cout << "1. Knight   - HP:12  ATK:4  MOV:2  RNG:2\n";
+    std::cout << "2. Archer   - HP:8   ATK:2  MOV:1  RNG:5\n";
+    std::cout << "3. Lancer   - HP:10  ATK:3  MOV:2  RNG:4\n";
+    std::cout << "4. Assassin - HP:9   ATK:5  MOV:3  RNG:1\n";
+    std::cout << "First unit: ";
     std::cin >> choice;
 
     if (std::cin.fail() || choice < 1 || choice > 4) {
@@ -42,7 +46,7 @@ void Game::setupUnits() {
         units.push_back(std::make_unique<Assassin>(true, Position{1, 1}));
         break;
     }
-    std::cout << "Select your second unit:\n";
+    std::cout << "Second unit: ";
     std::cin >> choice;
     if (std::cin.fail() || choice < 1 || choice > 4) {
         clearInput();
