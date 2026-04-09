@@ -7,6 +7,10 @@
 void EnemyAI::takeTurn(Unit& unit, std::vector<std::unique_ptr<Unit>>& units, Grid& grid) {
     std::cout << unit.name << " is taking its turn...\n";
 
+    // Clear buffs from the previous turn and tick cooldowns.
+    unit.clearTurnBuffs();
+    unit.tickCooldown();
+
     int targetIndex = findClosestPlayer(unit, units);
 
     if (targetIndex == -1) {
@@ -15,6 +19,24 @@ void EnemyAI::takeTurn(Unit& unit, std::vector<std::unique_ptr<Unit>>& units, Gr
     }
 
     Unit& target = *units[targetIndex];
+
+    // Use ability if available.
+    if (unit.canUseAbility()) {
+        // Self-buff abilities (Shield Wall, Charge, Vanish): use before combat.
+        // Volley (Archer): use when enemies are in range.
+        bool shouldUse = false;
+        if (unit.abilityName == "Volley") {
+            shouldUse = unit.isInRange(target);
+        } else {
+            shouldUse = true;
+        }
+
+        if (shouldUse) {
+            unit.useAbility(units);
+            // If ability was Volley, the attack already happened.
+            if (unit.abilityName == "Volley") return;
+        }
+    }
 
     // Attack if already in range.
     if (unit.isInRange(target)) {
@@ -36,7 +58,7 @@ int EnemyAI::findClosestPlayer(const Unit& enemyUnit, const std::vector<std::uni
     int closestDistance = std::numeric_limits<int>::max();
 
     for (int i = 0; i < (int)units.size(); i++) {
-        if (!units[i]->alive || !units[i]->isPlayer) {
+        if (!units[i]->alive || !units[i]->isPlayer || units[i]->hidden) {
             continue;
         }
 

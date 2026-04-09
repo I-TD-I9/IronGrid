@@ -134,6 +134,10 @@ void Game::run() {
             displayGrid();
             std::cout << "\nCurrent turn: " << currentUnit.name << "\n";
 
+            // Clear buffs from the previous turn and tick cooldowns.
+            currentUnit.clearTurnBuffs();
+            currentUnit.tickCooldown();
+
             if (currentUnit.isPlayer) {
                 playerTurn(currentUnit);
             } else {
@@ -176,7 +180,13 @@ void Game::playerTurn(Unit& unit) {
         std::cout << "Choose action:\n";
         std::cout << "1. Move\n";
         std::cout << "2. Attack\n";
-        std::cout << "3. End Turn\n";
+        std::cout << "3. Ability (" << unit.abilityName;
+        if (unit.canUseAbility()) {
+            std::cout << " - Ready)\n";
+        } else {
+            std::cout << " - " << unit.abilityCooldown << " turns)\n";
+        }
+        std::cout << "4. End Turn\n";
         std::cout << "Enter choice: ";
         std::cin >> choice;
 
@@ -193,6 +203,14 @@ void Game::playerTurn(Unit& unit) {
             Combat::handleAttack(unit, units);
             break;
         } else if (choice == 3) {
+            if (!unit.canUseAbility()) {
+                std::cout << unit.abilityName << " is on cooldown for "
+                     << unit.abilityCooldown << " more turn(s).\n";
+                continue;
+            }
+            unit.useAbility(units);
+            break;
+        } else if (choice == 4) {
             std::cout << unit.name << " ends their turn.\n";
             break;
         } else {

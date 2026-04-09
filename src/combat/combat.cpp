@@ -2,10 +2,24 @@
 #include <iostream>
 
 void Combat::performAttack(Unit& attacker, Unit& defender) {
-    std::cout << attacker.name << " attacks " << defender.name
-         << " for " << attacker.attackDamage << " damage!\n";
+    if (defender.hidden) {
+        std::cout << defender.name << " is hidden and cannot be targeted!\n";
+        return;
+    }
 
-    defender.hp -= attacker.attackDamage;
+    int damage = attacker.attackDamage;
+    if (attacker.charged) {
+        damage *= 2;
+        attacker.charged = false;
+    }
+    if (defender.shielded) {
+        damage /= 2;
+    }
+
+    std::cout << attacker.name << " attacks " << defender.name
+         << " for " << damage << " damage!\n";
+
+    defender.hp -= damage;
 
     if (defender.hp <= 0) {
         defender.hp = 0;
@@ -21,7 +35,7 @@ void Combat::handleAttack(Unit& unit, std::vector<std::unique_ptr<Unit>>& units)
 
     std::cout << "Targets in range:\n";
     for (int i = 0; i < (int)units.size(); i++) {
-        if (units[i]->alive && units[i]->isPlayer != unit.isPlayer && unit.isInRange(*units[i])) {
+        if (units[i]->alive && !units[i]->hidden && units[i]->isPlayer != unit.isPlayer && unit.isInRange(*units[i])) {
             std::cout << i << " - " << units[i]->name
                  << " (HP: " << units[i]->hp << ")\n";
             validTargets.push_back(i);
