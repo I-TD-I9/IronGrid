@@ -8,6 +8,10 @@ add_executable(irongrid
     src/main.cpp
     src/game/game.cpp
     src/units/unit.cpp
+    src/units/knight.cpp
+    src/units/archer.cpp
+    src/units/lancer.cpp
+    src/units/assassin.cpp
     src/grid/grid.cpp
     src/combat/combat.cpp
     src/ai/enemy_ai.cpp
